@@ -18,6 +18,7 @@ namespace App
     {
         public MongoDB mongo = new MongoDB();
         List<LoadData> doc = new List<LoadData>();
+        List<RecordData> DL_csdl = new List<RecordData>();
         private bool Is_Loading_Data = false;
         public Form1()
         {
@@ -87,16 +88,24 @@ namespace App
             tmp = binary_search(getname, 0, doc.Count() - 1);
             get_infor_allday(tmp.start, tmp.stop, true);
 
+            
+
+
+        }
+        private void handlerselection2()
+        {
+            if (Is_Loading_Data) return;
+            /*if (doc.Count <= 0) return;*/
+            DataGridViewRow selRow = dataGridView3.CurrentRow;
+            string getname2 = Convert.ToString(selRow.Cells["nameDataGridViewTextBoxColumn1"].Value);
             //display infor base on getname value
-            RecordData Infor_data = mongo.Get_AData(getname);
+            RecordData Infor_data = mongo.Get_AData(getname2);
             namebx.Text = Infor_data.Name;
             idbx.Text = Infor_data.ID;
             phonebx.Text = Infor_data.Phone;
             agebx.Text = Infor_data.Age;
             mssvbx.Text = Infor_data.MSSV;
             majorbx.Text = Infor_data.Major;
-
-
         }
 
         private void DataGridView2_SelectionChanged(object sender, EventArgs e)
@@ -193,6 +202,7 @@ namespace App
             Time_Sub = Out.Subtract(In);
             Time_After_Set = Time_Sub.Subtract(TimeSet);
             tb.TimePerDay = Time_After_Set;
+            int x = (int)Time_After_Set.TotalHours; // convert timespan/day to int
             if (display)
                 table2BindingSource.Add(tb);  //display on datagridview 2 - table 1
 
@@ -281,32 +291,6 @@ namespace App
 
         private void bt_add_Click(object sender, EventArgs e)
         {
-            Add_newData Infor_add = new Add_newData();
-            Infor_add.ID = idbx.Text;
-            Infor_add.Name = namebx.Text;
-            Infor_add.Age = agebx.Text;
-            Infor_add.Major = majorbx.Text;
-            Infor_add.MSSV = mssvbx.Text;
-            Infor_add.Phone = phonebx.Text;
-
-            var Bson = JsonConvert.SerializeObject(Infor_add);
-            var tmp = BsonSerializer.Deserialize<BsonDocument>(Bson);
-            mongo.Insert_document(tmp);
-
-            try
-            {
-                OpenFileDialog open = new OpenFileDialog();
-                open.Filter = "Image Files(*.jpg; *.jpeg; *.gif; *.bmp)|*.jpg; *.jpeg; *.gif; *.bmp";
-                if (open.ShowDialog() == DialogResult.OK)
-                {
-                    Bitmap bit = new Bitmap(open.FileName);
-                    //pictureBox1.Image = bit;
-                }
-            }
-            catch (Exception)
-            {
-                throw new ApplicationException("Failed loading image");
-            }
 
         }
 
@@ -338,6 +322,79 @@ namespace App
         private void mssvbx_TextChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void label9_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void bt_check_Click(object sender, EventArgs e)
+        {
+            Is_Loading_Data = true;
+            recordDataBindingSource.Clear();
+            var DLs =mongo.Get_csdl();
+            foreach(BsonDocument DL in DLs)
+            {
+                RecordData DL_data = BsonSerializer.Deserialize<RecordData>(DL);
+                //DL_csdl.Add(DL_data);
+                recordDataBindingSource.Add(DL_data);
+            }
+            Is_Loading_Data = false;
+        }
+
+        private void dataGridView3_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
+        {
+            handlerselection2();
+        }
+        private void DataGridView3_SelectionChanged(object sender, EventArgs e)
+        {
+            handlerselection2();
+        }
+
+        private void bt_them_Click(object sender, EventArgs e)
+        {
+            Add_newData Infor_add = new Add_newData();
+            Infor_add.ID = idbx.Text;
+            Infor_add.Name = namebx.Text;
+            Infor_add.Age = agebx.Text;
+            Infor_add.Major = majorbx.Text;
+            Infor_add.MSSV = mssvbx.Text;
+            Infor_add.Phone = phonebx.Text;
+
+            var Bson = JsonConvert.SerializeObject(Infor_add);
+            var tmp = BsonSerializer.Deserialize<BsonDocument>(Bson);
+            mongo.Insert_document(tmp);
+
+            try
+            {
+                OpenFileDialog open = new OpenFileDialog();
+                open.Filter = "Image Files(*.jpg; *.jpeg; *.gif; *.bmp)|*.jpg; *.jpeg; *.gif; *.bmp";
+                if (open.ShowDialog() == DialogResult.OK)
+                {
+                    Bitmap bit = new Bitmap(open.FileName);
+                    //pictureBox1.Image = bit;
+                }
+            }
+            catch (Exception)
+            {
+                throw new ApplicationException("Failed loading image");
+            }
+        }
+
+        private void bt_xoa_Click(object sender, EventArgs e)
+        {
+            Add_newData Infor_add = new Add_newData();
+            Infor_add.ID = idbx.Text;
+            Infor_add.Name = namebx.Text;
+            Infor_add.Age = agebx.Text;
+            Infor_add.Major = majorbx.Text;
+            Infor_add.MSSV = mssvbx.Text;
+            Infor_add.Phone = phonebx.Text;
+
+            var Bson = JsonConvert.SerializeObject(Infor_add);
+            var tmp = BsonSerializer.Deserialize<BsonDocument>(Bson);
+            mongo.Delete_document(tmp);
         }
     }
 
@@ -371,6 +428,12 @@ namespace App
             return objects;  // return recordData type
 
         }
+        public List<BsonDocument> Get_csdl()
+        {
+            var Document3 = CSDL_col.Find(new BsonDocument()).ToList();
+            return Document3;
+        }
+
         public List<BsonDocument> Load_cham_cong(string date)
         {
             var filter1 = Builders<BsonDocument>.Filter.Eq("Date", date);//& Builders<BsonDocument>.Filter.Eq("Name", name);
@@ -378,6 +441,7 @@ namespace App
             return Document1;
 
         }
+
         public List<BsonDocument> Load_cham_cong_2(string date)
         {
             var filter2 = Builders<BsonDocument>.Filter.Eq("Date", date);
@@ -385,10 +449,17 @@ namespace App
             return Document2;
 
         }
+
         public void Insert_document(BsonDocument name)
         {
             CSDL_col.InsertOne(name);
         }
+
+        public void Delete_document(BsonDocument name)
+        {
+            CSDL_col.DeleteOne(name);
+        }
+
         public dang_nhap Dang_nhap(string Name)
         {
             var filter = Builders<BsonDocument>.Filter.Eq("Name", Name);
@@ -397,10 +468,12 @@ namespace App
             dang_nhap objects = BsonSerializer.Deserialize<dang_nhap>(Document); //transfer to recordData type
             return objects;
         }
+
         public void Insert(BsonDocument name)
         {
             Dang_nhap_col.InsertOne(name);
         }
+        
     }
 }
 
